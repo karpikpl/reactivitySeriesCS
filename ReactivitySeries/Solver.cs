@@ -30,6 +30,13 @@ namespace ReactivitySeries
                 return;
             }
 
+            if (metalsCount == 1)
+            {
+                writer.WriteLine(0);
+                writer.Flush();
+                return;
+            }
+
             if (experimentsCount < metalsCount - 1)
             {
                 writer.WriteLine("back to the lab");

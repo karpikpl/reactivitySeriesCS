@@ -32,6 +32,30 @@ namespace ReactivitySeries
         }
 
         [Test]
+        public void Solver_Should_GiveCorrectAnswer7()
+        {
+            // Arrange
+            Solver solver = new Solver();
+            const string input =
+@"2 1
+1 0";
+            const string expected = @"1 0
+";
+
+            // Act
+            using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(input)))
+            using (var outMs = new MemoryStream())
+            {
+                solver.Solve(ms, outMs);
+                outMs.Position = 0;
+                var result = new StreamReader(outMs).ReadToEnd();
+
+                // Assert
+                Assert.That(result, Is.EqualTo(expected));
+            }
+        }
+
+        [Test]
         public void Solver_Should_GiveCorrectAnswer2()
         {
             // Arrange
@@ -155,6 +179,29 @@ namespace ReactivitySeries
 4 2
 5 1";
             const string expected = @"5 1 4 2 3
+";
+
+            // Act
+            using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(input)))
+            using (var outMs = new MemoryStream())
+            {
+                solver.Solve(ms, outMs);
+                outMs.Position = 0;
+                var result = new StreamReader(outMs).ReadToEnd();
+
+                // Assert
+                Assert.That(result, Is.EqualTo(expected));
+            }
+        }
+
+        [Test]
+        public void Solver_Should_GiveCorrectAnswer8()
+        {
+            // Arrange
+            Solver solver = new Solver();
+            const string input =
+@"1 0";
+            const string expected = @"0
 ";
 
             // Act
