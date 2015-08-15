@@ -9,10 +9,8 @@ namespace ReactivitySeries
 {
     class Solver
     {
-        /// <summary>
-        /// Metal dict (name -> reactivity)
-        /// </summary>
-        Dictionary<int, float> metals = new Dictionary<int, float>();
+        private readonly List<LinkedList<int>> metals = new List<LinkedList<int>>();
+        private readonly List<Tuple<int, int>> cache = new List<Tuple<int, int>>();
 
         public void Solve(Stream inStream, Stream outStream)
         {
@@ -22,71 +20,129 @@ namespace ReactivitySeries
 
             int metalsCount = scanner.NextInt();
             int experimentsCount = scanner.NextInt();
+            int a, b;
+
+            if (metalsCount == 2)
+            {
+                var result = SolutionFor2(scanner);
+                writer.WriteLine(result);
+                writer.Flush();
+                return;
+            }
+
+            if (experimentsCount < metalsCount - 1)
+            {
+                writer.WriteLine("back to the lab");
+                writer.Flush();
+                return;
+            }
 
             for (int i = 0; i < experimentsCount; i++)
             {
                 // read the experiment
-                int a = scanner.NextInt();
-                int b = scanner.NextInt();
+                a = scanner.NextInt();
+                b = scanner.NextInt();
 
-                if (metals.ContainsKey(a) ^ metals.ContainsKey(b))
+                if (ProcessExperiment(a, b, metalsCount))
                 {
-                    // we know one of the metals
+                    var solution = metals.First(m => m.Count == metalsCount);
 
-                    if (metals.ContainsKey(a))
+                    var last = solution.Last.Value;
+                    foreach (var metal in solution)
                     {
-                        metals.Add(b, metals[a] + 1);
-                    }
-                    else
-                    {
-                        metals.Add(a, metals[b] - 1);
-                    }
-                }
-                else
-                    if (!metals.ContainsKey(a) && !metals.ContainsKey(b))
-                    {
-                        // we don't know any of the metals
-                        metals.Add(a, 0f);
-                        metals.Add(b, 1f);
-                    }
-                    else
-                    {
-                        // we know both of the metals
-                        if (metals[a] < metals[b])
+                        if (metal != last)
                         {
-                            // ok - we don't have to do anything
-                        }
-                        else if(Math.Abs(metals[a] - metals[b]) < 0.0001)
-                        {
-                            // equal -> make a smaller
-                            metals[a] /= 2f;
+                            writer.Write(metal);
+                            writer.Write(" ");
                         }
                         else
                         {
-                            throw new InvalidOperationException("data is not consistent");
+                            writer.Write(last);
+                            writer.Write("\r\n");
                         }
+
                     }
-            }
 
-
-            float prev = -1;
-            StringBuilder result = new StringBuilder();
-            foreach (var metal in metals.OrderBy(m => m.Value))
-            {
-                if (Math.Abs(prev - metal.Value) < 0.0001)
-                {
-                    result.Clear();
-                    result.Append("back to the lab");
-                    break;
+                    writer.Flush();
+                    return;
                 }
-
-                result.Append(metal.Key).Append(" ");
-                prev = metal.Value;
             }
 
-            writer.WriteLine(result.ToString().TrimEnd());
+            writer.WriteLine("back to the lab");
 
             writer.Flush();
+        }
+
+        private string SolutionFor2(Scanner scanner)
+        {
+            return scanner.Next() + " " + scanner.Next();
+        }
+
+        private bool ProcessExperiment(int a, int b, int expectedLength)
+        {
+            foreach (var tuple in cache)
+            {
+                if (tuple.Item1 == b)
+                {
+                    // a , b == Item1, Item 2
+                    LinkedList<int> newChain = new LinkedList<int>();
+                    newChain.AddFirst(a);
+                    newChain.AddLast(b);
+                    newChain.AddLast(tuple.Item2);
+
+                    if (MatchNewChain(newChain, expectedLength))
+                        return true;
+                    metals.Add(newChain);
+                }
+                if (tuple.Item2 == a)
+                {
+                    // Item1, Item2 == a, b
+                    LinkedList<int> newChain = new LinkedList<int>();
+                    newChain.AddFirst(tuple.Item1);
+                    newChain.AddLast(a);
+                    newChain.AddLast(b);
+
+                    if (MatchNewChain(newChain, expectedLength))
+                        return true;
+                    metals.Add(newChain);
+                }
+            }
+
+            cache.Add(new Tuple<int, int>(a, b));
+            return false;
+        }
+
+        private bool MatchNewChain(LinkedList<int> newChain, int expectedLength)
+        {
+            if (newChain.Count == expectedLength)
+            {
+                metals.Add(newChain);
+                return true;
+            }
+
+            var middle = newChain.First.Next.Value;
+
+            foreach (var metal in metals)
+            {
+                if (metal.First.Value == middle && metal.First.Next.Value == newChain.Last.Value)
+                {
+                    // match
+                    metal.AddFirst(newChain.First.Value);
+
+                    if (metal.Count == expectedLength)
+                        return true;
+                }
+                if (metal.Last.Value == middle && metal.Last.Previous.Value == newChain.First.Value)
+                {
+                    // match
+                    metal.AddLast(newChain.Last.Value);
+
+                    if (metal.Count == expectedLength)
+                        return true;
+                }
+            }
+
+            return false;
         }
     }
 }
