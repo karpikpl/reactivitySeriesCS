@@ -17,7 +17,7 @@ namespace ReactivitySeries
         public void BigTest_Should_WorkInResonableTime()
         {
             // Arrange
-            const int testSize = 10;
+            const int testSize = 1000;
             Solver solver = new Solver();
             Random rand = new Random();
             List<string> input = new List<string>(testSize);

@@ -168,7 +168,7 @@ namespace ReactivitySeries
             // Arrange
             Solver solver = new Solver();
             const string input =
-@"5 10
+@"6 11
 5 4
 5 2
 5 3
@@ -178,8 +178,9 @@ namespace ReactivitySeries
 4 3
 2 3
 4 2
-5 1";
-            const string expected = @"5 1 4 2 3
+5 1
+0 5";
+            const string expected = @"0 5 1 4 2 3
 ";
 
             // Act

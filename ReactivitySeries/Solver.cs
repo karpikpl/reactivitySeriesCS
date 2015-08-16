@@ -2,15 +2,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using Kattis.IO;
 
 namespace ReactivitySeries
 {
     class Solver
     {
-        private readonly List<LinkedList<int>> _metals = new List<LinkedList<int>>();
-        private readonly List<Tuple<int, int>> _cache = new List<Tuple<int, int>>();
+        private readonly HashSet<Tuple<int, int>> _cache = new HashSet<Tuple<int, int>>();
 
         public void Solve(Stream inStream, Stream outStream)
         {
@@ -49,53 +47,13 @@ namespace ReactivitySeries
                 var a = scanner.NextInt();
                 var b = scanner.NextInt();
 
-                if (ProcessExperiment(a, b, metalsCount))
-                {
-                    Success(metalsCount, writer);
-                    return;
-                }
+                _cache.Add(new Tuple<int, int>(a, b));
             }
 
-            if (Compact(metalsCount))
-            {
-                Success(metalsCount, writer);
-                return;
-            }
-#if DEBUG
-            if (_metals.Count > 0)
-            {
-                var bestSolutionLength = _metals.Max(m => m.Count);
-                var bestSolution = _metals.First(m => m.Count == bestSolutionLength);
-                Debug.WriteLine("best solutuion: " + string.Join(" ", bestSolution));
-            }
+            // NEW !!
+            var newResult = Solve2(metalsCount, _cache);
 
-#endif
-
-            writer.WriteLine("back to the lab");
-
-            writer.Flush();
-        }
-
-        private void Success(int expectedLength, StreamWriter writer)
-        {
-            Debug.WriteLine("Success");
-            var solution = _metals.First(m => m.Count == expectedLength);
-
-            var last = solution.Last.Value;
-            foreach (var metal in solution)
-            {
-                if (metal != last)
-                {
-                    writer.Write(metal);
-                    writer.Write(" ");
-                }
-                else
-                {
-                    writer.Write(last);
-                    writer.Write("\r\n");
-                }
-
-            }
+            writer.WriteLine(newResult == null ? "back to the lab" : string.Join(" ", newResult));
 
             writer.Flush();
         }
@@ -105,150 +63,97 @@ namespace ReactivitySeries
             return scanner.Next() + " " + scanner.Next();
         }
 
-        private bool ProcessExperiment(int a, int b, int expectedLength)
+        private static void Solve2(int expectedLength, List<Tuple<int, int>> rules)
         {
-            foreach (var tuple in _cache)
+            LinkedList<int> solution = new LinkedList<int>();
+
+            for (int i = 0; i < rules.Count; i++)
             {
-                if (tuple.Item1 == b)
-                {
-                    // a , b == Item1, Item 2
-                    LinkedList<int> newChain = new LinkedList<int>();
-                    newChain.AddFirst(a);
-                    newChain.AddLast(b);
-                    newChain.AddLast(tuple.Item2);
+                var rule = rules[i];
+                var node = solution.First;
+                var processed = false;
 
-                    _metals.Add(newChain);
-                    if (newChain.Count == expectedLength)
-                        return true;
+                while (node != null && !processed)
+                {
+                    if (node.Value == rule.Item2)
+                    {
+                        node.List.AddBefore(node, rule.Item1);
+                        processed = true;
+                    }
+                    if (node.Value == rule.Item1)
+                    {
+                        node.List.AddAfter(node, rule.Item2);
+                        processed = true;
+                    }
+
+                    node = node.Next;
                 }
-                if (tuple.Item2 == a)
-                {
-                    // Item1, Item2 == a, b
-                    LinkedList<int> newChain = new LinkedList<int>();
-                    newChain.AddFirst(tuple.Item1);
-                    newChain.AddLast(a);
-                    newChain.AddLast(b);
 
-                    _metals.Add(newChain);
-                    if (newChain.Count == expectedLength)
-                        return true;
+                if (!processed)
+                {
+                    solution.AddLast(rule.Item1);
+                    solution.AddLast(rule.Item2);
                 }
             }
-
-            _cache.Add(new Tuple<int, int>(a, b));
-
-            return false;
         }
 
-        private bool Compact(int expectedLength)
+        private static int[] Solve2(int n, HashSet<Tuple<int, int>> rules)
         {
-            bool wasChange = true;
-            int loops = 0;
-            HashSet<string> metalHashSet = new HashSet<string>(_metals.Select(m => string.Join(" ", m)));
-            HashSet<string> tmp = new HashSet<string>();
+            int[] solution = new int[n];
+            Dictionary<int, int> indexes = new Dictionary<int, int>();
 
-            while (wasChange)
+            for (int i = 0; i < n; i++)
             {
-                loops++;
-                Debug.WriteLine("loop {0}, metals: {1}", loops, _metals.Count);
-                wasChange = false;
-                int count = _metals.Count;
-
-                for (int index = 0; index < count; index++)
-                {
-                    var metal = _metals[index];
-                    var metalHash = String.Join(" ", metal);
-
-                    foreach (var tuple in _cache)
-                    {
-                        if (tuple.Item2 == metal.First.Value)
-                        {
-                            var hash = tuple.Item1 + " " + metalHash;
-
-                            if (!metalHashSet.Contains(hash) && !tmp.Contains(hash))
-                            {
-                                var cpy = new int[metal.Count + 1];
-                                cpy[0] = tuple.Item1;
-                                //metal.AddFirst(tuple.Item1);
-                                metal.CopyTo(cpy, 1);
-
-                                tmp.Add(hash);
-                                _metals.Add(new LinkedList<int>(cpy));
-                                wasChange = true;
-
-                                if (cpy.Length == expectedLength)
-                                    return true;
-                            }
-                        }
-                        if (tuple.Item1 == metal.Last.Value)
-                        {
-                            var hash = metalHash + " " + tuple.Item2;
-
-                            if (!metalHashSet.Contains(hash) && !tmp.Contains(hash))
-                            {
-                                var cpy = new int[metal.Count + 1];
-                                cpy[cpy.Length - 1] = tuple.Item2;
-                                //metal.AddLast(tuple.Item2);
-                                metal.CopyTo(cpy, 0);
-
-                                tmp.Add(hash);
-                                _metals.Add(new LinkedList<int>(cpy));
-                                wasChange = true;
-
-                                if (cpy.Length == expectedLength)
-                                    return true;
-                            }
-                        }
-                    }
-                }
-
-                metalHashSet = tmp;
-                tmp.Clear();
-                _metals.RemoveRange(0, count);
+                solution[i] = n - 1 - i;
+                indexes[n - 1 - i] = i;
             }
-            Debug.WriteLine("While loops {0}", loops);
-            return false;
+
+            return CheckRules(solution, rules, indexes);
         }
 
-        private bool MatchNewChain(LinkedList<int> newChain, int expectedLength)
+        private static int[] CheckRules(int[] solution, HashSet<Tuple<int, int>> rules, Dictionary<int, int> indexes)
         {
-            if (newChain.Count == expectedLength)
+            bool allOk = false;
+            int swaps = 0;
+
+            while (!allOk)
             {
-                _metals.Add(newChain);
-                return true;
-            }
+                allOk = true;
 
-            foreach (var metal in _metals)
-            {
-                if (metal.First.Value == newChain.Last.Previous.Value && metal.First.Next.Value == newChain.Last.Value)
+                foreach (var rule in rules)
                 {
-                    // match
-                    var node = newChain.Last.Previous.Previous;
-                    while (node != null)
+                    if (indexes[rule.Item1] > indexes[rule.Item2])
                     {
-                        metal.AddFirst(node.Value);
-                        node = node.Previous;
-                    }
+                        //swap
+                        solution[indexes[rule.Item1]] = rule.Item2;
+                        solution[indexes[rule.Item2]] = rule.Item1;
 
-                    if (metal.Count == expectedLength)
-                        return true;
-                }
-                if (metal.Last.Value == newChain.First.Next.Value && metal.Last.Previous.Value == newChain.First.Value)
-                {
-                    // match
-                    var node = newChain.First.Next.Next;
-                    while (node != null)
-                    {
-                        metal.AddLast(node.Value);
-                        node = node.Next;
-                    }
+                        var tmpIndex = indexes[rule.Item1];
+                        indexes[rule.Item1] = indexes[rule.Item2];
+                        indexes[rule.Item2] = tmpIndex;
 
-                    if (metal.Count == expectedLength)
-                        return true;
+                        // we just made a change - start over
+                        allOk = false;
+                        swaps++;
+                        //break;
+                    }
                 }
             }
 
-            return false;
+            Debug.WriteLine("{0} swaps made", swaps);
+
+            for (int i = 0; i < solution.Length - 1; i++)
+            {
+                Tuple<int, int> tupleToFind = new Tuple<int, int>(solution[i], solution[i + 1]);
+
+                if (!rules.Contains(tupleToFind))
+                {
+                    Debug.WriteLine("solution {0} not unique, the rule {1} is missing", string.Join(" ", solution), tupleToFind);
+                    return null;
+                }
+            }
+
+            return solution;
         }
     }
 }
