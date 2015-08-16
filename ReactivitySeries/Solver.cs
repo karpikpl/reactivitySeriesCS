@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using Kattis.IO;
 
 namespace ReactivitySeries
@@ -47,7 +48,9 @@ namespace ReactivitySeries
                 var a = scanner.NextInt();
                 var b = scanner.NextInt();
 
-                _cache.Add(new Tuple<int, int>(a, b));
+                var rule = new Tuple<int, int>(a, b);
+
+                _cache.Add(rule);
             }
 
             // NEW !!
@@ -63,25 +66,36 @@ namespace ReactivitySeries
             return scanner.Next() + " " + scanner.Next();
         }
 
-        private static void Solve2(int expectedLength, List<Tuple<int, int>> rules)
+        private static int[] CreateInitSolution(HashSet<Tuple<int, int>> rules, int n)
         {
-            LinkedList<int> solution = new LinkedList<int>();
+            HashSet<int> metals = new HashSet<int>(Enumerable.Range(0, n));
+            LinkedList<int> initSolution = new LinkedList<int>();
 
-            for (int i = 0; i < rules.Count; i++)
+            foreach (var rule in rules)
             {
-                var rule = rules[i];
-                var node = solution.First;
+                if (metals.Count == 0)
+                    return initSolution.ToArray();
+
+                var node = initSolution.First;
                 var processed = false;
+
+                bool canAdd1 = metals.Contains(rule.Item1);
+                bool canAdd2 = metals.Contains(rule.Item2);
+
+                if (!canAdd1 && !canAdd2)
+                    continue;
 
                 while (node != null && !processed)
                 {
-                    if (node.Value == rule.Item2)
+                    if (node.Value == rule.Item2 && canAdd1)
                     {
+                        metals.Remove(rule.Item1);
                         node.List.AddBefore(node, rule.Item1);
                         processed = true;
                     }
-                    if (node.Value == rule.Item1)
+                    if (node.Value == rule.Item1 && canAdd2)
                     {
+                        metals.Remove(rule.Item2);
                         node.List.AddAfter(node, rule.Item2);
                         processed = true;
                     }
@@ -89,23 +103,42 @@ namespace ReactivitySeries
                     node = node.Next;
                 }
 
-                if (!processed)
-                {
-                    solution.AddLast(rule.Item1);
-                    solution.AddLast(rule.Item2);
-                }
+                //                if (!processed)
+                //                {
+                //                    metals.Remove(rule.Item1);
+                //                    metals.Remove(rule.Item2);
+                //                    initSolution.AddLast(rule.Item1);
+                //                    initSolution.AddLast(rule.Item2);
+                //                }
             }
+
+            //            if (metals.Count != 0)
+            //                throw new InvalidOperationException("something went wrong");
+
+            Debug.WriteLine("adding extra {0} at the end", metals.Count);
+            foreach (var metal in metals)
+            {
+                initSolution.AddLast(metal);
+            }
+
+            return initSolution.ToArray();
         }
 
         private static int[] Solve2(int n, HashSet<Tuple<int, int>> rules)
         {
-            int[] solution = new int[n];
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            int[] solution = CreateInitSolution(rules, n);
+            sw.Stop();
+            Debug.WriteLine("init solution created in {0} ms", sw.ElapsedMilliseconds);
+
             Dictionary<int, int> indexes = new Dictionary<int, int>();
 
             for (int i = 0; i < n; i++)
             {
-                solution[i] = n - 1 - i;
-                indexes[n - 1 - i] = i;
+                //                solution[i] = n - 1 - i;
+                //                indexes[n - 1 - i] = i;
+                indexes[solution[i]] = i;
             }
 
             return CheckRules(solution, rules, indexes);
