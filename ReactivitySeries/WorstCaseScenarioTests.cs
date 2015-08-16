@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace ReactivitySeries
@@ -13,8 +12,7 @@ namespace ReactivitySeries
     public class BigTest
     {
         [Test]
-        [Repeat(1)]
-        public void BigTest_Should_WorkInResonableTime()
+        public void WorstCaseScenario_Should_ReturnAnswerInResonableTime()
         {
             // Arrange
             const int testSize = 1000;
@@ -40,7 +38,6 @@ namespace ReactivitySeries
             string expectedResult = expected.ToString().TrimEnd() + "\r\n";
 
             // Act
-            //Debug.WriteLine(sb.ToString());
             using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString())))
             using (var outMs = new MemoryStream())
             {

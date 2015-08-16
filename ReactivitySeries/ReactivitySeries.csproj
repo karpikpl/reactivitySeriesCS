@@ -45,12 +45,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BigTest.cs" />
     <Compile Include="Kattio.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Solver.cs" />
     <Compile Include="Tests.cs" />
+    <Compile Include="WorstCaseScenarioTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

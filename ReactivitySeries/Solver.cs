@@ -9,12 +9,11 @@ namespace ReactivitySeries
 {
     class Solver
     {
-        private readonly HashSet<Tuple<int, int>> _cache = new HashSet<Tuple<int, int>>();
 
         public void Solve(Stream inStream, Stream outStream)
         {
+            HashSet<Tuple<int, int>> cache = new HashSet<Tuple<int, int>>();
             Scanner scanner = new Scanner(inStream);
-
             StreamWriter writer = new StreamWriter(outStream);
 
             int metalsCount = scanner.NextInt();
@@ -22,6 +21,7 @@ namespace ReactivitySeries
 
             if (experimentsCount < metalsCount - 1)
             {
+                // not enough data to create unique order
                 writer.WriteLine("back to the lab");
                 writer.Flush();
                 return;
@@ -29,6 +29,7 @@ namespace ReactivitySeries
 
             if (metalsCount == 2)
             {
+                // two metals - hadle it right away
                 var result = SolutionFor2(scanner);
                 writer.WriteLine(result);
                 writer.Flush();
@@ -37,6 +38,7 @@ namespace ReactivitySeries
 
             if (metalsCount == 1)
             {
+                // one metal - solution is 0
                 writer.WriteLine(0);
                 writer.Flush();
                 return;
@@ -50,14 +52,12 @@ namespace ReactivitySeries
 
                 var rule = new Tuple<int, int>(a, b);
 
-                _cache.Add(rule);
+                cache.Add(rule);
             }
 
-            // NEW !!
-            var newResult = Solve2(metalsCount, _cache);
+            var newResult = FindSolution(metalsCount, cache);
 
             writer.WriteLine(newResult == null ? "back to the lab" : string.Join(" ", newResult));
-
             writer.Flush();
         }
 
@@ -102,18 +102,7 @@ namespace ReactivitySeries
 
                     node = node.Next;
                 }
-
-                //                if (!processed)
-                //                {
-                //                    metals.Remove(rule.Item1);
-                //                    metals.Remove(rule.Item2);
-                //                    initSolution.AddLast(rule.Item1);
-                //                    initSolution.AddLast(rule.Item2);
-                //                }
             }
-
-            //            if (metals.Count != 0)
-            //                throw new InvalidOperationException("something went wrong");
 
             Debug.WriteLine("adding extra {0} at the end", metals.Count);
             foreach (var metal in metals)
@@ -124,20 +113,13 @@ namespace ReactivitySeries
             return initSolution.ToArray();
         }
 
-        private static int[] Solve2(int n, HashSet<Tuple<int, int>> rules)
+        private static int[] FindSolution(int n, HashSet<Tuple<int, int>> rules)
         {
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
             int[] solution = CreateInitSolution(rules, n);
-            sw.Stop();
-            Debug.WriteLine("init solution created in {0} ms", sw.ElapsedMilliseconds);
-
             Dictionary<int, int> indexes = new Dictionary<int, int>();
 
             for (int i = 0; i < n; i++)
             {
-                //                solution[i] = n - 1 - i;
-                //                indexes[n - 1 - i] = i;
                 indexes[solution[i]] = i;
             }
 
@@ -168,7 +150,6 @@ namespace ReactivitySeries
                         // we just made a change - start over
                         allOk = false;
                         swaps++;
-                        //break;
                     }
                 }
             }
