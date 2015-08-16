@@ -116,12 +116,13 @@ namespace ReactivitySeries
             // Arrange
             Solver solver = new Solver();
             const string input =
-@"4 3
+@"6 5
+4 5
+1 2
 0 1
-2 3
-1 2";
-            const string expected = @"0 1 2 3
-";
+3 4
+2 3";
+            const string expected = "0 1 2 3 4 5\r\n";
 
             // Act
             using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(input)))
@@ -216,5 +217,29 @@ namespace ReactivitySeries
                 Assert.That(result, Is.EqualTo(expected));
             }
         }
+
+        [Test]
+        public void Solver_Should_GiveCorrectAnswer9()
+        {
+            // Arrange
+            Solver solver = new Solver();
+            const string input =
+@"2 0";
+            const string expected = @"back to the lab
+";
+
+            // Act
+            using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(input)))
+            using (var outMs = new MemoryStream())
+            {
+                solver.Solve(ms, outMs);
+                outMs.Position = 0;
+                var result = new StreamReader(outMs).ReadToEnd();
+
+                // Assert
+                Assert.That(result, Is.EqualTo(expected));
+            }
+        }
+
     }
 }
